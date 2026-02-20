@@ -1,0 +1,810 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>T-MEC Reigns (México) — Ranking infinito</title>
+  <style>
+    :root { --maxw: 1100px; --b: rgba(255,255,255,.14); --bg:#0b0f17; --fg:#e9eefb; }
+    body { font-family: system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; margin:0; background:var(--bg); color:var(--fg); }
+    .wrap { max-width: var(--maxw); margin: 0 auto; padding: 18px; }
+    h1 { font-size: 18px; font-weight: 900; margin: 0 0 10px; opacity:.96; }
+    h2 { font-size: 14px; margin: 0 0 10px; opacity:.92; }
+    .row { display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
+    .chip { padding: 6px 10px; border:1px solid rgba(255,255,255,.12); border-radius:999px; background:rgba(255,255,255,.04); font-size:12px; }
+    .grid { display:grid; grid-template-columns: 1.2fr .8fr; gap:14px; align-items:start; }
+    @media (max-width: 980px){ .grid { grid-template-columns: 1fr; } }
+
+    .panel { border:1px solid var(--b); border-radius:18px; padding:14px; background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03)); box-shadow:0 10px 40px rgba(0,0,0,.35); }
+    .muted { opacity:.8; }
+    .small { font-size:12px; }
+    .kbd { font-family: ui-monospace,SFMono-Regular,Menlo,monospace; padding:2px 6px; border:1px solid rgba(255,255,255,.18); border-radius:8px; background:rgba(255,255,255,.06); }
+
+    /* Stats bars */
+    .stats { display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin: 10px 0 12px; }
+    .stat { border:1px solid rgba(255,255,255,.12); border-radius:14px; padding:10px 12px; background:rgba(255,255,255,.03); }
+    .label { display:flex; justify-content:space-between; font-size:12px; opacity:.92; margin-bottom:6px; }
+    .bar { height:10px; border-radius:999px; background:rgba(255,255,255,.10); overflow:hidden; }
+    .fill { height:100%; width:50%; background: rgba(140,180,255,.9); }
+
+    /* Card / choices */
+    .cardTitle { font-weight: 900; font-size: 16px; margin: 0 0 8px; }
+    .ctx { opacity:.92; line-height:1.35; margin:0 0 12px; }
+    .choices { display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:10px; }
+    button {
+      border:1px solid rgba(255,255,255,.18);
+      background: rgba(255,255,255,.06);
+      color: var(--fg);
+      border-radius: 14px;
+      padding: 12px;
+      cursor: pointer;
+      font-weight: 800;
+      text-align:left;
+    }
+    button:hover { background: rgba(255,255,255,.10); }
+    button:disabled { opacity:.55; cursor:not-allowed; }
+
+    .toolbar { display:flex; gap:10px; flex-wrap:wrap; margin-top:10px; }
+    .btnSmall { font-size:12px; padding:10px 12px; border-radius:12px; font-weight:800; }
+
+    .log { margin-top:12px; border:1px solid rgba(255,255,255,.10); border-radius:14px; padding:10px 12px; background:rgba(0,0,0,.18); font-size:12px; line-height:1.35; max-height:170px; overflow:auto; }
+    .end { margin-top: 12px; padding: 14px; border-radius: 14px; border:1px solid rgba(255,255,255,.18); background: rgba(255,120,120,.08); }
+    .ok { background: rgba(120,255,170,.08); }
+
+    /* Form */
+    .formGrid { display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
+    @media (max-width: 640px){ .formGrid { grid-template-columns: 1fr; } }
+    label { font-size:12px; opacity:.9; display:block; margin: 0 0 6px; }
+    input, select {
+      width:100%;
+      border:1px solid rgba(255,255,255,.18);
+      background: rgba(0,0,0,.22);
+      color: var(--fg);
+      border-radius: 12px;
+      padding: 10px 10px;
+      outline: none;
+      font-size: 13px;
+      box-sizing:border-box;
+    }
+    input::placeholder { color: rgba(233,238,251,.55); }
+    .hr { height:1px; background: rgba(255,255,255,.10); margin: 12px 0; }
+
+    /* Table */
+    table { width:100%; border-collapse: collapse; font-size: 12px; }
+    th, td { text-align:left; padding: 8px 6px; border-bottom: 1px solid rgba(255,255,255,.10); vertical-align: top; }
+    th { opacity:.85; font-weight:900; }
+    .mono { font-family: ui-monospace,SFMono-Regular,Menlo,monospace; }
+    .pill { display:inline-block; padding:2px 8px; border:1px solid rgba(255,255,255,.14); border-radius:999px; background:rgba(255,255,255,.05); }
+  </style>
+</head>
+
+<body>
+<div class="wrap">
+  <div class="row">
+    <h1>T-MEC Reigns (México) — Juego infinito con ranking</h1>
+    <span class="chip">Controles: <span class="kbd">←</span>/<span class="kbd">→</span> · Reiniciar: <span class="kbd">R</span></span>
+    <span class="chip"><span class="pill" id="sessionState">No registrado</span></span>
+  </div>
+
+  <div class="grid">
+    <!-- LEFT: GAME -->
+    <div class="panel" id="gamePanel">
+      <div class="row">
+        <h2 style="margin:0;">Partida</h2>
+        <span class="chip">Presidente: <b id="presName">—</b></span>
+        <span class="chip">Año: <b id="year">—</b> · Turno: <b id="turn">—</b></span>
+        <span class="chip">Racha (años): <b id="yearsSurvived">—</b></span>
+      </div>
+
+      <div class="stats" id="stats"></div>
+
+      <div class="cardTitle" id="cardTitle">Regístrate para empezar</div>
+      <p class="ctx" id="cardCtx">El objetivo es durar el mayor número de años sin que ningún indicador llegue a 0 o 100.</p>
+
+      <div class="choices">
+        <button id="btnLeft" disabled>← —</button>
+        <button id="btnRight" disabled>— →</button>
+      </div>
+
+      <div class="toolbar">
+        <button class="btnSmall" id="btnRestart" disabled>Reiniciar partida</button>
+        <button class="btnSmall" id="btnSave" disabled>Guardar al ranking</button>
+        <button class="btnSmall" id="btnExport" disabled>Exportar resultados (JSON)</button>
+      </div>
+
+      <div class="small muted" style="margin-top:10px;">
+        Derrota si algún indicador llega a <b>0</b> o <b>100</b>. Juego infinito: el año avanza cada 6 turnos.
+      </div>
+
+      <div id="ending" style="display:none;"></div>
+      <div class="log" id="log"></div>
+    </div>
+
+    <!-- RIGHT: REGISTER + LEADERBOARD -->
+    <div class="panel">
+      <h2>Registro</h2>
+      <div class="small muted">
+        El registro y el ranking se guardan en <span class="mono">localStorage</span> (solo en este navegador). No es un sistema multiusuario real.
+      </div>
+      <div class="hr"></div>
+
+      <div class="formGrid">
+        <div>
+          <label for="inpPresident">Nombre del presidente (para el juego)</label>
+          <input id="inpPresident" placeholder="Ej. Presidenta Montoya" maxlength="40" />
+        </div>
+        <div>
+          <label for="inpName">Tu nombre</label>
+          <input id="inpName" placeholder="Ej. José Miguel" maxlength="60" />
+        </div>
+        <div>
+          <label for="inpEmail">Correo</label>
+          <input id="inpEmail" placeholder="ejemplo@correo.com" type="email" maxlength="80" />
+        </div>
+        <div>
+          <label for="selCareer">Carrera</label>
+          <select id="selCareer">
+            <option value="">Selecciona…</option>
+            <option>Economía</option>
+            <option>Gobierno</option>
+            <option>Gobierno y Economía</option>
+            <option>Derecho</option>
+            <option>Relaciones Internacionales</option>
+            <option>Otra</option>
+          </select>
+        </div>
+        <div>
+          <label for="selSemester">Semestre</label>
+          <select id="selSemester">
+            <option value="">Selecciona…</option>
+            <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
+            <option>6</option><option>7</option><option>8</option><option>9</option><option>10</option>
+          </select>
+        </div>
+        <div style="display:flex; align-items:end;">
+          <button id="btnRegister" style="width:100%; font-weight:900;">Registrar e iniciar</button>
+        </div>
+      </div>
+
+      <div class="hr"></div>
+
+      <div class="row" style="justify-content: space-between;">
+        <h2 style="margin:0;">Top ranking</h2>
+        <div class="row">
+          <button class="btnSmall" id="btnClear" title="Borra el ranking de este navegador">Borrar ranking</button>
+        </div>
+      </div>
+
+      <div class="small muted" style="margin:8px 0 10px;">
+        Ordenado por <b>años sobrevividos</b>, luego por <b>turnos</b>.
+      </div>
+
+      <div style="overflow:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Presidente</th>
+              <th>Años</th>
+              <th>Turnos</th>
+              <th>ECO/POL/REL/COMP</th>
+              <th>Jugador</th>
+            </tr>
+          </thead>
+          <tbody id="lbBody">
+            <tr><td colspan="6" class="muted">Aún no hay partidas guardadas.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="hr"></div>
+      <div class="small muted">
+        Nota: si quieres ranking “real” multiusuario (varias personas y un top global), hay que conectarlo a un backend (Firebase/Supabase/Sheets API).
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  // =====================
+  // CONFIG
+  // =====================
+  const START_YEAR = 2025;
+  const TURNS_PER_YEAR = 6;
+
+  // LocalStorage keys
+  const LS_PROFILE = "tmec_reigns_profile_v1";
+  const LS_LEADERBOARD = "tmec_reigns_leaderboard_v1";
+
+  // =====================
+  // STATE
+  // =====================
+  let profile = null;
+  let gameOver = false;
+  let activeCard = null;
+
+  let stats = { economia: 50, politica: 50, relacion: 50, competitividad: 50 };
+  let turn = 1;
+
+  // tracking
+  let history = [];
+  let decisions = 0;
+  let sumStats = { economia:0, politica:0, relacion:0, competitividad:0 };
+  let minStats = { economia:100, politica:100, relacion:100, competitividad:100 };
+  let maxStats = { economia:0, politica:0, relacion:0, competitividad:0 };
+
+  const statMeta = [
+    { key: "economia",       name: "📈 ECO — Economía" },
+    { key: "politica",       name: "🏛 POL — Política interna" },
+    { key: "relacion",       name: "🌎 REL — Relación trilateral" },
+    { key: "competitividad", name: "🏭 COMP — Competitividad" }
+  ];
+
+  // =====================
+  // CARDS (infinite pool)
+  // =====================
+  const cards = [
+    { id:"auto_1", title:"Reglas de origen automotrices", ctx:"EE.UU. propone elevar el contenido regional obligatorio.",
+      left:{ text:"Resistir y pedir gradualidad", delta:{ economia:+6, relacion:-14, politica:+4, competitividad:-2 } },
+      right:{ text:"Aceptar endurecimiento", delta:{ economia:-8, relacion:+10, politica:-2, competitividad:+14 } } },
+
+    { id:"auto_2", title:"Inspección aduanera intensiva", ctx:"Aumentan revisiones en frontera; crecen tiempos de cruce.",
+      left:{ text:"Presionar públicamente", delta:{ economia:-6, relacion:-12, politica:+6, competitividad:-4 } },
+      right:{ text:"Mesa técnica + ventanilla", delta:{ economia:+4, relacion:+10, politica:-2, competitividad:+6 } } },
+
+    { id:"lab_1", title:"Mecanismo laboral rápido", ctx:"Se abre un caso laboral contra una planta mexicana.",
+      left:{ text:"Denunciar injerencia", delta:{ politica:+10, relacion:-18, economia:-6, competitividad:+2 } },
+      right:{ text:"Cooperar y corregir", delta:{ relacion:+14, politica:-6, competitividad:-4, economia:+2 } } },
+
+    { id:"lab_2", title:"Reforma de inspección laboral", ctx:"Propuesta interna para fortalecer inspecciones y justicia laboral.",
+      left:{ text:"Implementación limitada", delta:{ politica:+6, economia:+2, relacion:-4, competitividad:+2 } },
+      right:{ text:"Implementación robusta", delta:{ relacion:+10, competitividad:+6, politica:-8, economia:+2 } } },
+
+    { id:"ene_1", title:"Certidumbre energética", ctx:"Empresas piden reglas claras para invertir en electricidad y renovables.",
+      left:{ text:"Mantener discrecionalidad", delta:{ politica:+6, economia:-6, relacion:-10, competitividad:-10 } },
+      right:{ text:"Reglas claras + permisos", delta:{ economia:+8, relacion:+10, politica:-6, competitividad:+12 } } },
+
+    { id:"ene_2", title:"Subsidios fósiles", ctx:"Socios presionan por reducir subsidios y alinear metas climáticas.",
+      left:{ text:"Mantener subsidios", delta:{ politica:+10, relacion:-14, economia:+6, competitividad:+2 } },
+      right:{ text:"Transición acelerada", delta:{ relacion:+12, competitividad:-10, politica:-10, economia:+3 } } },
+
+    { id:"inv_1", title:"Nearshoring con capital chino", ctx:"Inversión china busca producir en México para exportar a Norteamérica.",
+      left:{ text:"Restringir sectores estratégicos", delta:{ relacion:+10, economia:-10, politica:+6, competitividad:+2 } },
+      right:{ text:"Aprobar con condiciones", delta:{ economia:+16, relacion:-12, politica:-6, competitividad:+10 } } },
+
+    { id:"inv_2", title:"Incentivos fiscales", ctx:"Debate interno sobre incentivos para atraer plantas de alto valor.",
+      left:{ text:"Incentivos moderados", delta:{ economia:+6, politica:+2, relacion:+2, competitividad:+6 } },
+      right:{ text:"Incentivos agresivos", delta:{ economia:+10, competitividad:+12, politica:-10, relacion:-2 } } },
+
+    { id:"agro_1", title:"Disputa sanitaria agro", ctx:"Restricciones sanitarias impactan exportaciones mexicanas.",
+      left:{ text:"Defender postura actual", delta:{ politica:+6, relacion:-12, economia:-8, competitividad:+2 } },
+      right:{ text:"Ajustar con evidencia", delta:{ relacion:+10, economia:+6, politica:-4, competitividad:+2 } } },
+
+    { id:"agro_2", title:"Subsidios agrícolas", ctx:"Queja por apoyos internos; riesgo de panel.",
+      left:{ text:"Mantener apoyos", delta:{ politica:+8, relacion:-10, economia:+3, competitividad:+1 } },
+      right:{ text:"Rediseñar apoyos (focalizar)", delta:{ relacion:+8, economia:+4, politica:-6, competitividad:+3 } } },
+
+    { id:"met_1", title:"Acero y aluminio", ctx:"Amenazan medidas por supuesto dumping en metales.",
+      left:{ text:"Responder con represalias", delta:{ politica:+6, relacion:-16, economia:-10, competitividad:+4 } },
+      right:{ text:"Verificación y mesa técnica", delta:{ relacion:+12, economia:+4, politica:-4, competitividad:+2 } } },
+
+    { id:"dig_1", title:"Comercio digital y datos", ctx:"Negociación sobre estándares de datos y plataformas.",
+      left:{ text:"Regulación estricta inmediata", delta:{ politica:+8, economia:-6, relacion:-8, competitividad:-4 } },
+      right:{ text:"Marco gradual con pilotos", delta:{ economia:+6, relacion:+6, politica:-4, competitividad:+6 } } },
+
+    { id:"log_1", title:"Seguridad logística", ctx:"Robo a transporte afecta cadenas; empresas evalúan relocalizar.",
+      left:{ text:"Operativos focalizados", delta:{ competitividad:+6, politica:+2, economia:+2, relacion:+0 } },
+      right:{ text:"Estrategia integral (costosa)", delta:{ competitividad:+12, economia:+6, politica:-10, relacion:+2 } } },
+
+    { id:"fron_1", title:"Presión fronteriza", ctx:"Se vincula cooperación fronteriza con el clima del acuerdo.",
+      left:{ text:"No vincular temas", delta:{ politica:+6, relacion:-14, economia:-4, competitividad:+1 } },
+      right:{ text:"Cooperación acotada", delta:{ relacion:+10, politica:-6, economia:+2, competitividad:+1 } } },
+
+    { id:"ip_1", title:"Propiedad intelectual", ctx:"Empresas piden reforzar PI para atraer I+D.",
+      left:{ text:"Priorizar acceso (flexible)", delta:{ politica:+6, competitividad:-4, relacion:-6, economia:+2 } },
+      right:{ text:"Reforzar PI y certeza", delta:{ competitividad:+10, relacion:+6, politica:-6, economia:+4 } } },
+
+    { id:"proc_1", title:"Compras públicas", ctx:"Debate sobre apertura y contenido nacional.",
+      left:{ text:"Contenido nacional fuerte", delta:{ politica:+8, relacion:-10, economia:+2, competitividad:+2 } },
+      right:{ text:"Apertura con cláusulas", delta:{ relacion:+8, economia:+4, politica:-6, competitividad:+4 } } },
+
+    { id:"env_1", title:"Presión ambiental", ctx:"Se amenaza panel por cumplimiento ambiental en zona industrial.",
+      left:{ text:"Minimizar y litigarlo", delta:{ politica:+6, relacion:-12, economia:-4, competitividad:+2 } },
+      right:{ text:"Cumplimiento rápido", delta:{ relacion:+10, competitividad:+4, politica:-6, economia:+2 } } },
+
+    { id:"eco_1", title:"Presión inflacionaria", ctx:"Suben precios; crece costo político.",
+      left:{ text:"Control de precios", delta:{ economia:-8, politica:+6, competitividad:-6, relacion:+0 } },
+      right:{ text:"Coordinación monetaria-fiscal", delta:{ economia:-4, politica:-2, competitividad:+2, relacion:+2 } } },
+
+    { id:"eco_2", title:"Salario y productividad", ctx:"Debate: subir salarios vs. competitividad.",
+      left:{ text:"Aumentar fuerte", delta:{ politica:+10, competitividad:-10, economia:+2, relacion:-2 } },
+      right:{ text:"Gradual + productividad", delta:{ politica:+4, competitividad:+6, economia:+4, relacion:+2 } } },
+
+    { id:"ind_1", title:"Política industrial", ctx:"Clusters para semiconductores y electrónica.",
+      left:{ text:"Proyecto piloto", delta:{ competitividad:+6, economia:+4, politica:+2, relacion:+2 } },
+      right:{ text:"Plan nacional agresivo", delta:{ competitividad:+14, economia:+8, politica:-10, relacion:-2 } } },
+
+    { id:"pymes_1", title:"Pymes en cadenas regionales", ctx:"Programa para integrar Pymes mexicanas a proveeduría T-MEC.",
+      left:{ text:"Programa limitado", delta:{ economia:+3, politica:+3, relacion:+2, competitividad:+4 } },
+      right:{ text:"Programa ambicioso", delta:{ economia:+8, politica:-6, relacion:+4, competitividad:+10 } } },
+
+    { id:"rule_1", title:"Certidumbre regulatoria", ctx:"Empresas piden reglas estables; temen cambios súbitos.",
+      left:{ text:"Mantener flexibilidad política", delta:{ politica:+6, economia:-6, relacion:-8, competitividad:-10 } },
+      right:{ text:"Paquete de certeza jurídica", delta:{ competitividad:+12, economia:+6, relacion:+8, politica:-8 } } },
+
+    { id:"edu_1", title:"Capital humano", ctx:"Formación técnica ligada a sectores estratégicos.",
+      left:{ text:"Capacitación limitada", delta:{ competitividad:+4, economia:+2, politica:+2, relacion:+1 } },
+      right:{ text:"Plan intensivo con empresas", delta:{ competitividad:+10, economia:+4, politica:-6, relacion:+2 } } },
+
+    // gated events
+    { id:"event_arancel", title:"Amenaza arancelaria", ctx:"REL baja: se filtra paquete de aranceles si no hay concesiones.",
+      gates:{ relacion:{ lt: 30 } },
+      left:{ text:"Escalar", delta:{ relacion:-15, economia:-10, politica:+8, competitividad:+2 } },
+      right:{ text:"Concesión parcial", delta:{ relacion:+15, economia:-4, politica:-6, competitividad:-2 } } },
+
+    { id:"event_gob", title:"Crisis de gobernabilidad", ctx:"POL baja: oposición bloquea reformas; mercados se inquietan.",
+      gates:{ politica:{ lt: 25 } },
+      left:{ text:"Polarizar", delta:{ politica:+6, economia:-8, relacion:-4, competitividad:-4 } },
+      right:{ text:"Pacto legislativo", delta:{ politica:+14, economia:+4, relacion:+2, competitividad:+2 } } },
+
+    { id:"event_sobrecal", title:"Sobrecalentamiento", ctx:"ECO muy alta: inflación y cuellos de botella.",
+      gates:{ economia:{ gt: 80 } },
+      left:{ text:"Controles agresivos", delta:{ economia:-10, politica:-6, relacion:+2, competitividad:-6 } },
+      right:{ text:"Ajuste gradual", delta:{ economia:-6, politica:+2, relacion:+4, competitividad:+2 } } }
+  ];
+
+  // =====================
+  // DOM
+  // =====================
+  const el = (id) => document.getElementById(id);
+
+  const sessionStateEl = el("sessionState");
+
+  const presNameEl = el("presName");
+  const yearEl = el("year");
+  const turnEl = el("turn");
+  const yearsSurvivedEl = el("yearsSurvived");
+
+  const statsEl = el("stats");
+  const cardTitleEl = el("cardTitle");
+  const cardCtxEl = el("cardCtx");
+
+  const btnLeft = el("btnLeft");
+  const btnRight = el("btnRight");
+  const btnRestart = el("btnRestart");
+  const btnSave = el("btnSave");
+  const btnExport = el("btnExport");
+
+  const logEl = el("log");
+  const endingEl = el("ending");
+
+  const inpPresident = el("inpPresident");
+  const inpName = el("inpName");
+  const inpEmail = el("inpEmail");
+  const selCareer = el("selCareer");
+  const selSemester = el("selSemester");
+  const btnRegister = el("btnRegister");
+
+  const lbBody = el("lbBody");
+  const btnClear = el("btnClear");
+
+  // =====================
+  // UTILS
+  // =====================
+  function clamp(v){ return Math.max(0, Math.min(100, v)); }
+  function currentYear(){ return START_YEAR + Math.floor((turn-1)/TURNS_PER_YEAR); }
+  function yearsSurvived(){
+    // años completos sobrevividos desde START_YEAR
+    return currentYear() - START_YEAR;
+  }
+
+  function log(line){
+    const t = new Date().toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"});
+    logEl.innerHTML = `<div><span class="muted">[${t}]</span> ${line}</div>` + logEl.innerHTML;
+  }
+
+  function gatesPass(card){
+    if (!card.gates) return true;
+    for (const [k, cond] of Object.entries(card.gates)){
+      const v = stats[k];
+      if (cond.lt !== undefined && !(v < cond.lt)) return false;
+      if (cond.gt !== undefined && !(v > cond.gt)) return false;
+    }
+    return true;
+  }
+
+  function pickCard(){
+    const eligible = cards.filter(gatesPass);
+    const lastId = history.length ? history[history.length-1].cardId : null;
+    let pool = eligible;
+    if (lastId){
+      const filtered = eligible.filter(c => c.id !== lastId);
+      if (filtered.length) pool = filtered;
+    }
+
+    // Prioriza eventos gated si están activos (para que se sienta reactivo)
+    const gated = pool.filter(c => c.gates);
+    const normal = pool.filter(c => !c.gates);
+
+    if (gated.length && Math.random() < 0.55) {
+      return gated[Math.floor(Math.random()*gated.length)];
+    }
+    return (normal.length ? normal : pool)[Math.floor(Math.random()* (normal.length ? normal.length : pool.length))];
+  }
+
+  function renderStats(){
+    statsEl.innerHTML = "";
+    for (const s of statMeta){
+      const v = stats[s.key];
+      const box = document.createElement("div");
+      box.className = "stat";
+      box.innerHTML = `
+        <div class="label"><span>${s.name}</span><b>${v}</b></div>
+        <div class="bar"><div class="fill" style="width:${v}%"></div></div>
+      `;
+      statsEl.appendChild(box);
+    }
+    presNameEl.textContent = profile?.presidentName ?? "—";
+    yearEl.textContent = currentYear();
+    turnEl.textContent = turn;
+    yearsSurvivedEl.textContent = yearsSurvived();
+  }
+
+  function showCard(){
+    if (gameOver) return;
+    activeCard = pickCard();
+    cardTitleEl.textContent = activeCard.title;
+    cardCtxEl.textContent = activeCard.ctx;
+    btnLeft.textContent = "← " + activeCard.left.text;
+    btnRight.textContent = activeCard.right.text + " →";
+  }
+
+  function trackExtremes(){
+    for (const s of statMeta){
+      const k = s.key;
+      const v = stats[k];
+      sumStats[k] += v;
+      minStats[k] = Math.min(minStats[k], v);
+      maxStats[k] = Math.max(maxStats[k], v);
+    }
+  }
+
+  function applyDelta(delta){
+    for (const [k, d] of Object.entries(delta)){
+      stats[k] = clamp(stats[k] + d);
+    }
+  }
+
+  function checkEnd(){
+    for (const s of statMeta){
+      const v = stats[s.key];
+      if (v === 0)  return { type:"lose", msg: `Colapso: ${s.name} llegó a 0.` };
+      if (v === 100) return { type:"lose", msg: `Colapso: ${s.name} llegó a 100.` };
+    }
+    return null; // infinito
+  }
+
+  function endScreen(result){
+    gameOver = true;
+    endingEl.style.display = "block";
+    endingEl.className = "end";
+    endingEl.innerHTML = `
+      <div style="font-weight:900; margin-bottom:6px;">⛔ Fin de la presidencia</div>
+      <div>${result.msg}</div>
+      <div class="muted" style="margin-top:8px;">
+        Años sobrevividos: <b>${yearsSurvived()}</b> · Turnos: <b>${turn-1}</b>
+      </div>
+      <div class="muted" style="margin-top:6px;">
+        Puedes guardar el resultado al ranking.
+      </div>
+    `;
+    btnLeft.disabled = true;
+    btnRight.disabled = true;
+    btnSave.disabled = false;
+    log(`Fin. ${result.msg}`);
+  }
+
+  function choose(side){
+    if (gameOver || !activeCard) return;
+
+    const choice = side === "left" ? activeCard.left : activeCard.right;
+    applyDelta(choice.delta);
+
+    decisions += 1;
+    trackExtremes();
+
+    history.push({
+      turn,
+      year: currentYear(),
+      cardId: activeCard.id,
+      cardTitle: activeCard.title,
+      side,
+      choiceText: choice.text,
+      delta: choice.delta,
+      statsAfter: { ...stats }
+    });
+
+    const deltaText = Object.entries(choice.delta).map(([k,v]) => `${k}${v>=0?"+":""}${v}`).join(", ");
+    log(`<b>${activeCard.title}</b> — ${side==="left"?"Izquierda":"Derecha"}: ${choice.text} <span class="muted">(${deltaText})</span>`);
+
+    turn += 1;
+    renderStats();
+
+    const result = checkEnd();
+    if (result) return endScreen(result);
+
+    showCard();
+  }
+
+  // =====================
+  // LEADERBOARD
+  // =====================
+  function loadLeaderboard(){
+    try {
+      const raw = localStorage.getItem(LS_LEADERBOARD);
+      if (!raw) return [];
+      const arr = JSON.parse(raw);
+      return Array.isArray(arr) ? arr : [];
+    } catch {
+      return [];
+    }
+  }
+
+  function saveLeaderboard(arr){
+    localStorage.setItem(LS_LEADERBOARD, JSON.stringify(arr));
+  }
+
+  function scoreRow(result){
+    // ranking: años desc, turnos desc, timestamp asc (más antiguo primero si empatan)
+    return {
+      id: crypto?.randomUUID ? crypto.randomUUID() : String(Date.now()) + "_" + Math.random().toString(16).slice(2),
+      savedAt: new Date().toISOString(),
+      presidentName: profile.presidentName,
+      playerName: profile.name,
+      email: profile.email,
+      career: profile.career,
+      semester: profile.semester,
+      years: result.years,
+      turns: result.turns,
+      finalStats: result.finalStats,
+      averages: result.averages,
+      mins: result.mins,
+      maxs: result.maxs
+    };
+  }
+
+  function renderLeaderboard(){
+    const lb = loadLeaderboard()
+      .sort((a,b) => (b.years - a.years) || (b.turns - a.turns) || (a.savedAt.localeCompare(b.savedAt)));
+
+    lbBody.innerHTML = "";
+    if (!lb.length){
+      lbBody.innerHTML = `<tr><td colspan="6" class="muted">Aún no hay partidas guardadas.</td></tr>`;
+      return;
+    }
+
+    const top = lb.slice(0, 20);
+    top.forEach((r, idx) => {
+      const fs = r.finalStats;
+      const player = `${escapeHtml(r.playerName || "—")}<div class="muted small">${escapeHtml(r.career || "—")}, Sem ${escapeHtml(r.semester || "—")}</div>`;
+      const statsTxt = `${fs.economia}/${fs.politica}/${fs.relacion}/${fs.competitividad}`;
+      const pres = escapeHtml(r.presidentName || "—");
+      lbBody.innerHTML += `
+        <tr>
+          <td class="mono">${idx+1}</td>
+          <td><b>${pres}</b></td>
+          <td class="mono"><b>${r.years}</b></td>
+          <td class="mono">${r.turns}</td>
+          <td class="mono">${statsTxt}</td>
+          <td>${player}</td>
+        </tr>
+      `;
+    });
+  }
+
+  function escapeHtml(str){
+    return String(str ?? "")
+      .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;").replaceAll("'","&#039;");
+  }
+
+  function computeResultSnapshot(){
+    const turnsPlayed = Math.max(0, turn - 1);
+    const y = yearsSurvived();
+    const avg = {};
+    if (decisions > 0){
+      for (const s of statMeta){
+        const k = s.key;
+        avg[k] = Math.round(sumStats[k] / decisions);
+      }
+    } else {
+      for (const s of statMeta){ avg[s.key] = stats[s.key]; }
+    }
+    return {
+      years: y,
+      turns: turnsPlayed,
+      finalStats: { ...stats },
+      averages: avg,
+      mins: { ...minStats },
+      maxs: { ...maxStats }
+    };
+  }
+
+  function saveCurrentToRanking(){
+    if (!profile) return;
+    const snap = computeResultSnapshot();
+    const lb = loadLeaderboard();
+    lb.push(scoreRow(snap));
+    saveLeaderboard(lb);
+    renderLeaderboard();
+    log(`Resultado guardado al ranking: <b>${snap.years} años</b>, <b>${snap.turns} turnos</b>.`);
+  }
+
+  // =====================
+  // PROFILE / REGISTER
+  // =====================
+  function loadProfile(){
+    try {
+      const raw = localStorage.getItem(LS_PROFILE);
+      if (!raw) return null;
+      const p = JSON.parse(raw);
+      if (!p || !p.email) return null;
+      return p;
+    } catch {
+      return null;
+    }
+  }
+
+  function saveProfile(p){
+    localStorage.setItem(LS_PROFILE, JSON.stringify(p));
+  }
+
+  function validateEmail(email){
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  }
+
+  function setSessionState(isReady){
+    sessionStateEl.textContent = isReady ? "Registrado" : "No registrado";
+    sessionStateEl.className = "pill";
+  }
+
+  function enableGameControls(enabled){
+    btnLeft.disabled = !enabled;
+    btnRight.disabled = !enabled;
+    btnRestart.disabled = !enabled;
+    btnExport.disabled = !enabled;
+    // btnSave: solo habilitar si hay algo que guardar (al perder o manual)
+    btnSave.disabled = !enabled;
+  }
+
+  function startNewRun(){
+    gameOver = false;
+    activeCard = null;
+
+    stats = { economia: 50, politica: 50, relacion: 50, competitividad: 50 };
+    turn = 1;
+    history = [];
+    decisions = 0;
+    sumStats = { economia:0, politica:0, relacion:0, competitividad:0 };
+    minStats = { economia:100, politica:100, relacion:100, competitividad:100 };
+    maxStats = { economia:0, politica:0, relacion:0, competitividad:0 };
+
+    endingEl.style.display = "none";
+    btnLeft.disabled = false;
+    btnRight.disabled = false;
+    btnRestart.disabled = false;
+    btnExport.disabled = false;
+    btnSave.disabled = false;
+
+    logEl.innerHTML = "";
+    renderStats();
+    showCard();
+    log(`Inicia presidencia: <b>${escapeHtml(profile.presidentName)}</b>.`);
+  }
+
+  // =====================
+  // EXPORT
+  // =====================
+  function exportResults(){
+    if (!profile) return;
+    const payload = {
+      profile,
+      meta: { startYear: START_YEAR, turnsPerYear: TURNS_PER_YEAR, infinite: true },
+      snapshot: computeResultSnapshot(),
+      history
+    };
+    const text = JSON.stringify(payload, null, 2);
+    if (navigator.clipboard && window.isSecureContext){
+      navigator.clipboard.writeText(text).then(() => {
+        log("Resultados exportados y copiados al portapapeles (JSON).");
+        alert("Copiado al portapapeles.");
+      }).catch(() => prompt("Copia el JSON:", text));
+    } else {
+      prompt("Copia el JSON:", text);
+    }
+  }
+
+  // =====================
+  // EVENTS
+  // =====================
+  btnLeft.addEventListener("click", () => choose("left"));
+  btnRight.addEventListener("click", () => choose("right"));
+
+  btnRestart.addEventListener("click", () => {
+    if (!profile) return;
+    startNewRun();
+  });
+
+  btnSave.addEventListener("click", () => {
+    if (!profile) return;
+    saveCurrentToRanking();
+  });
+
+  btnExport.addEventListener("click", exportResults);
+
+  window.addEventListener("keydown", (e) => {
+    if (!profile) return;
+    if (e.key === "ArrowLeft") choose("left");
+    if (e.key === "ArrowRight") choose("right");
+    if (e.key.toLowerCase() === "r") startNewRun();
+  });
+
+  btnRegister.addEventListener("click", () => {
+    const presidentName = inpPresident.value.trim();
+    const name = inpName.value.trim();
+    const email = inpEmail.value.trim().toLowerCase();
+    const career = selCareer.value.trim();
+    const semester = selSemester.value.trim();
+
+    if (!presidentName || presidentName.length < 2) { alert("Escribe un nombre de presidente."); return; }
+    if (!name || name.length < 2) { alert("Escribe tu nombre."); return; }
+    if (!validateEmail(email)) { alert("Escribe un correo válido."); return; }
+    if (!career) { alert("Selecciona tu carrera."); return; }
+    if (!semester) { alert("Selecciona tu semestre."); return; }
+
+    profile = { presidentName, name, email, career, semester };
+    saveProfile(profile);
+
+    setSessionState(true);
+    enableGameControls(true);
+
+    startNewRun();
+  });
+
+  btnClear.addEventListener("click", () => {
+    const ok = confirm("¿Borrar el ranking guardado en este navegador?");
+    if (!ok) return;
+    localStorage.removeItem(LS_LEADERBOARD);
+    renderLeaderboard();
+  });
+
+  // =====================
+  // INIT
+  // =====================
+  renderLeaderboard();
+
+  profile = loadProfile();
+  if (profile){
+    setSessionState(true);
+    enableGameControls(true);
+
+    // prefill form
+    inpPresident.value = profile.presidentName || "";
+    inpName.value = profile.name || "";
+    inpEmail.value = profile.email || "";
+    selCareer.value = profile.career || "";
+    selSemester.value = profile.semester || "";
+
+    // auto-start
+    startNewRun();
+  } else {
+    setSessionState(false);
+    enableGameControls(false);
+    renderStats();
+    log("Regístrate para iniciar una presidencia y competir en el ranking.");
+  }
+})();
+</script>
+</body>
+</html>
